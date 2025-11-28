@@ -44,7 +44,8 @@ export default function Utilidad({ noticiaId, onValorSeleccionado }) {
             borderRadius: '1rem',
             textAlign: 'center',
             maxWidth: '300px',
-            margin: 'auto'
+            margin: 'auto',
+            marginBottom: '10px'
         }}>
             <p style={{ marginBottom: '0.5rem' }}>¿Te resultó útil esta noticia?</p>
             {[1, 2, 3, 4, 5].map((v) => (

@@ -39,7 +39,10 @@ export const Portales = () => {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center justify-center bg-white p-4 gap-4">
+            <h2 className="text-2xl font-bold text-blue-600 text-center">
+                Portales del usuario
+            </h2>
             {listaPortales.map((p) => (
                 <div key={p.id} onClick={() => nuevoBloqueo(p.id, p.bloqueado ? 0 : 1)}>
                     <Portal p={p} />

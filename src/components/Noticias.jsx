@@ -19,8 +19,8 @@ function Noticias({ noticias }) {
 
 
     return (
-        <div style={{ padding: '2rem' }}>
-            <h2>Últimas noticias</h2>
+        <div className='p-6'>
+            <h2 className="text-2xl font-bold text-blue-600 text-center mb-4">📰 Últimas noticias</h2>
             {noticiasHoy.map(n => (
                 <NoticiaItem key={n.id} n={n} />
             ))}

@@ -15,6 +15,7 @@ export function AuthProvider({ children }) {
                 })
                 setUser(response.data)
             } catch (error) {
+                console.log(error);
                 setUser(null)
             } finally {
                 setLoading(false)
