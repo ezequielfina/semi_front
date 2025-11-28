@@ -1,34 +1,55 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { Loader } from "../components/Loader.jsx"; // Asegúrate de tener el Loader aquí
 
-const mapNivelResumen = (nivel) => {
-  switch (nivel) {
-    case 0.2:
-      return "Muy resumido";
-    case 0.5:
-      return "Resumen promedio";
-    case 0.8:
-      return "Poco resumen";
-    default:
-      return "Nivel no definido";
-  }
-};
+// Definimos las opciones visualmente para iterar sobre ellas
+const OPCIONES_RESUMEN = [
+  { 
+    valor: 0.2, 
+    label: "Flash", 
+    desc: "Muy resumido, solo lo vital.", 
+    icon: "⚡" 
+  },
+  { 
+    valor: 0.5, 
+    label: "Equilibrado", 
+    desc: "El balance ideal.", 
+    icon: "⚖️" 
+  },
+  { 
+    valor: 0.8, 
+    label: "Detallado", 
+    desc: "Casi todo el contenido.", 
+    icon: "📖" 
+  },
+];
 
 export const Config = () => {
-  const [notiOn, setNotiOn] = useState(null);
-  const [nivelResumen, setNivelResumen] = useState(null);
-  const [mensaje, setMensaje] = useState("");
+  const [notiOn, setNotiOn] = useState(false);
+  const [nivelResumen, setNivelResumen] = useState(0.5); // Valor default seguro
+  
+  // Estados de carga
+  const [loadingData, setLoadingData] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  const [mensaje, setMensaje] = useState(null);
 
+  // Cargar configuración inicial
   const getConfig = async () => {
+    setLoadingData(true);
     try {
       const res = await axios.get("http://localhost:8000/protected/config-usuario", {
         withCredentials: true,
       });
-      setNotiOn(res.data.notificaciones_activadas);
-      setNivelResumen(res.data.nivel_resumen);
+      // Asumiendo que la respuesta trae los datos correctamente
+      if (res.data) {
+          setNotiOn(res.data.notificaciones_activadas);
+          setNivelResumen(res.data.nivel_resumen);
+      }
     } catch (err) {
-      console.log(err);
+      console.error("Error cargando config:", err);
+      setMensaje({ type: "error", text: "No se pudo cargar la configuración." });
+    } finally {
+      setLoadingData(false);
     }
   };
 
@@ -36,92 +57,123 @@ export const Config = () => {
     getConfig();
   }, []);
 
-  async function configurar(notificaciones_activadas, nivel_resumen) {
+  // Guardar configuración
+  async function guardarCambios() {
+    setGuardando(true);
+    setMensaje(null);
+    
     try {
-      setGuardando(true);
-      setMensaje("");
       await axios.post(
         "http://localhost:8000/protected/config-usuario",
-        { notificaciones_activadas, nivel_resumen },
+        { 
+            notificaciones_activadas: notiOn, 
+            nivel_resumen: nivelResumen 
+        },
         { withCredentials: true }
       );
-      setMensaje("✅ Configuración guardada.");
-      getConfig();
+      setMensaje({ type: "success", text: "¡Configuración actualizada con éxito!" });
+      
+      // Opcional: Ocultar el mensaje después de 3 segundos
+      setTimeout(() => setMensaje(null), 3000);
+
     } catch (err) {
-      console.log(err);
-      setMensaje("❌ Error al guardar configuración.");
+      console.error(err);
+      setMensaje({ type: "error", text: "Hubo un problema al guardar." });
     } finally {
       setGuardando(false);
     }
   }
 
+  if (loadingData) {
+      return (
+          <div className="flex flex-col items-center justify-center min-h-[300px]">
+              <Loader />
+              <p className="mt-4 text-gray-500">Cargando tus preferencias...</p>
+          </div>
+      );
+  }
+
   return (
-    <div className="p-6 max-w-md mx-auto bg-white rounded-2xl shadow-md space-y-6 border border-gray-100">
-      <h2 className="text-2xl font-bold text-blue-600 text-center">
-        Configuración del Usuario
-      </h2>
-
-      {/* Notificaciones 
-      <div>
-        <label className="font-medium block mb-2 text-gray-700">
-          Notificaciones:
-        </label>
-        
-        {notiOn === null ? (
-          <span className="text-gray-400">Cargando...</span>
-        ) : (
-          <button
-            onClick={() => setNotiOn(!notiOn)}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              notiOn
-                ? "bg-blue-600 text-white hover:bg-blue-700"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-          >
-            {notiOn ? "Activadas" : "Desactivadas"}
-          </button>
-        )}
-      </div>*/}
-
-      {/* Nivel resumen */}
-      <div>
-        <label className="font-medium block mb-2 text-gray-700">
-          Nivel de resumen:
-        </label>
-        {nivelResumen === null ? (
-          <span className="text-gray-400">Cargando...</span>
-        ) : (
-          <select
-            value={nivelResumen}
-            onChange={(e) => setNivelResumen(parseFloat(e.target.value))}
-            className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-          >
-            <option value={0.2}>Muy resumido</option>
-            <option value={0.5}>Resumen promedio</option>
-            <option value={0.8}>Poco resumen</option>
-          </select>
-        )}
+    <div className="max-w-lg mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 mt-6">
+      
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-6 text-center">
+        <h2 className="text-2xl font-bold text-white">
+          ⚙️ Ajustes de Cuenta
+        </h2>
+        <p className="text-blue-100 text-sm mt-1">Personaliza tu experiencia de lectura</p>
       </div>
 
-      {/* Botón guardar */}
-      <button
-        onClick={() => configurar(notiOn, nivelResumen)}
-        className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
-        disabled={notiOn === null || nivelResumen === null || guardando}
-      >
-        {guardando ? "Guardando..." : "Guardar configuración"}
-      </button>
+      <div className="p-8 space-y-8">
+        
+        {/* --- Sección 1: Nivel de Resumen (Radio Cards) --- */}
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">
+            Nivel de Resumen
+          </label>
+          <div className="grid grid-cols-1 gap-3">
+            {OPCIONES_RESUMEN.map((opcion) => (
+              <div
+                key={opcion.valor}
+                onClick={() => setNivelResumen(opcion.valor)}
+                className={`
+                  relative flex items-center p-4 cursor-pointer rounded-xl border-2 transition-all duration-200
+                  ${nivelResumen === opcion.valor 
+                    ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' 
+                    : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'}
+                `}
+              >
+                <div className="text-2xl mr-4">{opcion.icon}</div>
+                <div className="flex-1">
+                  <h3 className={`font-semibold ${nivelResumen === opcion.valor ? 'text-blue-700' : 'text-gray-900'}`}>
+                    {opcion.label}
+                  </h3>
+                  <p className="text-sm text-gray-500">{opcion.desc}</p>
+                </div>
+                {/* Radio Check Circle */}
+                <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${nivelResumen === opcion.valor ? 'border-blue-600 bg-blue-600' : 'border-gray-400'}`}>
+                    {nivelResumen === opcion.valor && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
-      {/* Mensaje */}
-      {mensaje && (
-        <p
-          className={`text-sm text-center font-medium ${
-            mensaje.includes("Error") ? "text-red-600" : "text-green-600"
-          }`}
+        <hr className="border-gray-100" />
+
+      
+
+        {/* --- Mensajes de Feedback --- */}
+        {mensaje && (
+          <div className={`p-3 rounded-lg text-center text-sm font-medium animate-fade-in
+            ${mensaje.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}
+          `}>
+            {mensaje.text}
+          </div>
+        )}
+
+        {/* --- Botón Guardar --- */}
+        <button
+          onClick={guardarCambios}
+          disabled={guardando}
+          className={`
+            w-full py-3 px-4 rounded-xl font-bold text-white shadow-lg transform transition-all duration-200
+            ${guardando 
+                ? 'bg-blue-400 cursor-not-allowed' 
+                : 'bg-blue-600 hover:bg-blue-700 hover:-translate-y-1 hover:shadow-xl active:translate-y-0'}
+          `}
         >
-          {mensaje}
-        </p>
-      )}
+          {guardando ? (
+            <div className="flex items-center justify-center gap-2">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Guardando...
+            </div>
+          ) : (
+            "Guardar Cambios"
+          )}
+        </button>
+
+      </div>
     </div>
   );
 };
